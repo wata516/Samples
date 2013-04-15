@@ -2,11 +2,21 @@
 
 #include <Laser/Common/System/ManagerFactory.h>
 #include <Laser/Common/System/IManager.h>
-#include <Laser/Common/System/IWindow.h>
+#include <Laser/Common/System/Window.h>
 #include <Laser/Common/Input/IKeyboard.h>
 #include <TGUL/String.h>
 
 #include <GL/glfw.h>
+
+#include <Laser/Common/System/TechniqueManager.h>
+#include <Laser/Common/User/Technique.h>
+class ClearSample : public Laser::User::Technique
+{
+public:
+	virtual void Draw() {}
+	virtual uint GetClassSize( ) const { return sizeof( *this ); }
+};
+
 int main(int argc, const char * argv[])
 {
     std::cout << "初期化を行います" << std::endl;
@@ -24,13 +34,13 @@ int main(int argc, const char * argv[])
     }
 	
 	// IWindowを作成します
-	Laser::System::IWindow *pWindow;
+	Laser::System::Window *pWindow;
 	if( pManager->CreateWindow( &pWindow ) == false ) {
 		return 1;
 	}
 	
 	// Windowを作成する
-	if( pWindow->Create( "初期化サンプル", 0, 0, 0, 0 ) == false ) {
+	if( pWindow->Create( "sample", 0, 0, 0, 0 ) == false ) {
 		return 1;
 	}
 	
@@ -45,6 +55,19 @@ int main(int argc, const char * argv[])
 		return false;
 	}
 	
+	// TechniqueManagerを作成する
+	Laser::System::TechniqueManager *pTechniqueManager;
+	if( pManager->CreateTechniqueManager(&pTechniqueManager) == false ) {
+		return false;
+	}
+	
+	ClearSample ClearTechnique;
+	
+//	ClearTechnique.PushBack( );
+	pTechniqueManager->Regist( ClearTechnique );
+	
+	pWindow->SetTechnique( pTechniqueManager );
+	
 	// 描画ループ
 	while( pWindow->IsOpen() ) {
 		pKeyboard->Update( );
@@ -54,12 +77,10 @@ int main(int argc, const char * argv[])
 		// OpenGL rendering goes here...
 		glClear( GL_COLOR_BUFFER_BIT );
 
-		// Swap front and back rendering buffers
-		glfwSwapBuffers();
-
 		if( pKeyboard->IsTrigger(Laser::Input::IKeyboard::KEY_TYPE_ESCAPE) ) {
 			pWindow->Close();
 		}
+		pWindow->Flip();
 	}
 	
 	// Windowを閉じます
