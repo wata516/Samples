@@ -1,8 +1,9 @@
-#include <iostream>
+﻿#include <iostream>
 
 #include <Laser/Common/System/ManagerFactory.h>
 #include <Laser/Common/System/IManager.h>
-#include <laser/Common/System/IWindow.h>
+#include <Laser/Common/System/IWindow.h>
+#include <Laser/Common/Input/IKeyboard.h>
 #include <TGUL/String.h>
 
 #include <GL/glfw.h>
@@ -37,9 +38,17 @@ int main(int argc, const char * argv[])
 	if( pWindow->Open() == false ) {
 		return 1;
 	}
+
+	// Keyboardを作成する
+	Laser::Input::IKeyboard *pKeyboard;
+	if( pManager->CreateKeyboard( &pKeyboard ) == false ) {
+		return false;
+	}
 	
 	// 描画ループ
 	while( pWindow->IsOpen() ) {
+		pKeyboard->Update( );
+
 		glClearColor(1.0F,0.0F,0.0F,1.0F);
 
 		// OpenGL rendering goes here...
@@ -47,8 +56,8 @@ int main(int argc, const char * argv[])
 
 		// Swap front and back rendering buffers
 		glfwSwapBuffers();
-		
-		if( glfwGetKey( GLFW_KEY_ESC ) ) {
+
+		if( pKeyboard->IsTrigger(Laser::Input::IKeyboard::KEY_TYPE_ESCAPE) ) {
 			pWindow->Close();
 		}
 	}
