@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 
 #include <Laser/Common/System/ManagerFactory.h>
 #include <Laser/Common/System/IManager.h>
@@ -12,6 +12,12 @@
 #include <Laser/Common/User/Technique.h>
 class ClearSample : public Laser::User::Technique
 {
+public:
+	ClearSample() { }
+	
+	ClearSample( const ClearSample &sample ) {
+		
+	}
 public:
 	virtual void Draw() {}
 	virtual uint GetClassSize( ) const { return sizeof( *this ); }
@@ -62,8 +68,7 @@ int main(int argc, const char * argv[])
 	}
 	
 	ClearSample ClearTechnique;
-	
-//	ClearTechnique.PushBack( );
+
 	pTechniqueManager->Regist( ClearTechnique );
 	
 	pWindow->SetTechnique( pTechniqueManager );
@@ -72,14 +77,17 @@ int main(int argc, const char * argv[])
 	while( pWindow->IsOpen() ) {
 		pKeyboard->Update( );
 
-		glClearColor(1.0F,0.0F,0.0F,1.0F);
-
-		// OpenGL rendering goes here...
-		glClear( GL_COLOR_BUFFER_BIT );
-
 		if( pKeyboard->IsTrigger(Laser::Input::IKeyboard::KEY_TYPE_ESCAPE) ) {
 			pWindow->Close();
 		}
+		
+		glClearColor(1.0F,0.0F,0.0F,1.0F);
+		
+		// OpenGL rendering goes here...
+		glClear( GL_COLOR_BUFFER_BIT );
+		
+		pWindow->Render();
+
 		pWindow->Flip();
 	}
 	
