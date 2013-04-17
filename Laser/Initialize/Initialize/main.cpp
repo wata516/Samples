@@ -1,26 +1,43 @@
-#include <iostream>
+﻿#include <iostream>
 
 #include <Laser/Common/System/ManagerFactory.h>
 #include <Laser/Common/System/IManager.h>
 #include <Laser/Common/System/Window.h>
 #include <Laser/Common/Input/IKeyboard.h>
+#include <laser/Common/System/TechniqueManager.h>
+#include <Laser/Common/User/Technique.h>
+#include <Laser/Common/User/Pass.h>
 #include <TGUL/String.h>
 
 #include <GL/glfw.h>
 
-#include <Laser/Common/System/TechniqueManager.h>
-#include <Laser/Common/User/Technique.h>
-class ClearSample : public Laser::User::Technique
+class FirstPass : public Laser::User::Pass
 {
 public:
-	ClearSample() { }
-	
-	ClearSample( const ClearSample &sample ) {
-		
+	virtual unsigned int GetClassSize() const { return sizeof( *this ); }
+	virtual void Render() const
+	{
+		glClearColor(1.0F,0.0F,0.0F,1.0F);
+		glClear( GL_COLOR_BUFFER_BIT );
 	}
+};
+
+class SampleClearTechnique : public Laser::User::Technique
+{
+	FirstPass mFirstPass;
+
 public:
-	virtual void Draw() {}
-	virtual uint GetClassSize( ) const { return sizeof( *this ); }
+	virtual unsigned int GetClassSize() const { return sizeof( *this ); }
+
+public:
+	bool Create( ) {
+
+		if( Regist( mFirstPass ) == false ) {
+			return false;
+		}
+
+		return true;
+	}
 };
 
 int main(int argc, const char * argv[])
@@ -46,7 +63,7 @@ int main(int argc, const char * argv[])
 	}
 	
 	// Windowを作成する
-	if( pWindow->Create( "sample", 0, 0, 0, 0 ) == false ) {
+	if( pWindow->Create( "Sample", 0, 0, 0, 0 ) == false ) {
 		return 1;
 	}
 	
@@ -58,36 +75,39 @@ int main(int argc, const char * argv[])
 	// Keyboardを作成する
 	Laser::Input::IKeyboard *pKeyboard;
 	if( pManager->CreateKeyboard( &pKeyboard ) == false ) {
-		return false;
+		return 1;
 	}
-	
+
 	// TechniqueManagerを作成する
 	Laser::System::TechniqueManager *pTechniqueManager;
-	if( pManager->CreateTechniqueManager(&pTechniqueManager) == false ) {
-		return false;
+	if( pManager->CreateTechniqueManager( &pTechniqueManager ) == false ) {
+		return 1;
 	}
-	
-	ClearSample ClearTechnique;
 
-	pTechniqueManager->Regist( ClearTechnique );
-	
-	pWindow->SetTechnique( pTechniqueManager );
+	// Techniqueを作成する
+	SampleClearTechnique clear;
+	if( clear.Create() == false ) {
+		return 1;
+	}
+
+	pTechniqueManager->Regist( clear );
+	pWindow->SetTechnique(pTechniqueManager);
 	
 	// 描画ループ
 	while( pWindow->IsOpen() ) {
+
+		// キー入力操作
 		pKeyboard->Update( );
 
+		// ESCAPEを押すとウィンドウを閉じる
 		if( pKeyboard->IsTrigger(Laser::Input::IKeyboard::KEY_TYPE_ESCAPE) ) {
 			pWindow->Close();
 		}
-		
-		glClearColor(1.0F,0.0F,0.0F,1.0F);
-		
-		// OpenGL rendering goes here...
-		glClear( GL_COLOR_BUFFER_BIT );
-		
+
+		// 描画を行う
 		pWindow->Render();
 
+		// バックバッファとフロントバッファを切り替える
 		pWindow->Flip();
 	}
 	
