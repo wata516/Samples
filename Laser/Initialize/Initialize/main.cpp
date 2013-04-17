@@ -71,7 +71,7 @@ int main(int argc, const char * argv[])
         return 1;
     }
 	
-	// IWindowを作成します
+	// Windowを作成します
 	Laser::System::Window *pWindow;
 	if( pManager->CreateWindow( &pWindow ) == false ) {
 		return 1;
@@ -113,17 +113,17 @@ int main(int argc, const char * argv[])
 
 		// キー入力操作
 		pKeyboard->Update( );
-
-		// ESCAPEを押すとウィンドウを閉じる
-		if( pKeyboard->IsTrigger(Laser::Input::IKeyboard::KEY_TYPE_ESCAPE) ) {
-			pWindow->Close();
-		}
-
 		// 描画を行う
 		pWindow->Render();
 
 		// バックバッファとフロントバッファを切り替える
 		pWindow->Flip();
+				
+		// ESCAPEを押すとウィンドウを閉じる
+		if( pKeyboard->IsTrigger(Laser::Input::IKeyboard::KEY_TYPE_ESCAPE) ) {
+			pWindow->Close();
+		}
+
 	}
 	
 	// Windowを閉じます
