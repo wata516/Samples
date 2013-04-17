@@ -3,22 +3,36 @@
 #include <Laser/Common/System/ManagerFactory.h>
 #include <Laser/Common/System/IManager.h>
 #include <Laser/Common/System/Window.h>
+#include <Laser/Common/System/CommandFactory.h>
 #include <Laser/Common/Input/IKeyboard.h>
 #include <laser/Common/System/TechniqueManager.h>
 #include <Laser/Common/User/Technique.h>
 #include <Laser/Common/User/Pass.h>
 #include <TGUL/String.h>
-
+#include <Laser/Common/Command/Clear.h>
 #include <GL/glfw.h>
 
 class FirstPass : public Laser::User::Pass
 {
+	Laser::Command::Clear *mClear;
+
 public:
 	virtual unsigned int GetClassSize() const { return sizeof( *this ); }
 	virtual void Render() const
 	{
-		glClearColor(1.0F,0.0F,0.0F,1.0F);
-		glClear( GL_COLOR_BUFFER_BIT );
+		mClear->Draw();
+	}
+
+	bool Create( )
+	{
+		Laser::Command::IBase *pClear = 0;
+		if( Laser::System::CommandFactory::CreateCommand( "Clear", &pClear ) == false ) {
+			return false;
+		}
+		mClear = pClear->Get<Laser::Command::Clear>( );
+		mClear->SetColor( 1.0F, 0.0F, 0.0F, 1.0F );
+
+		return true;
 	}
 };
 
@@ -31,6 +45,7 @@ public:
 
 public:
 	bool Create( ) {
+		mFirstPass.Create();
 
 		if( Regist( mFirstPass ) == false ) {
 			return false;
