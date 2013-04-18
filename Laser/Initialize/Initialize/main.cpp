@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 
 #include <Laser/Common/System/ManagerFactory.h>
 #include <Laser/Common/System/IManager.h>
