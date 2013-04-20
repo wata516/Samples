@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include <Laser/Common/System/ManagerFactory.h>
-#include <Laser/Common/System/IManager.h>
+#include <Laser/Common/System/Manager.h>
 #include <Laser/Common/System/Window.h>
 #include <Laser/Common/System/CommandFactory.h>
 #include <Laser/Common/Input/IKeyboard.h>
@@ -59,7 +59,7 @@ int main(int argc, const char * argv[])
 {
     std::cout << "初期化を行います" << std::endl;
 
-    Laser::System::IManager *pManager = 0;
+    Laser::System::Manager *pManager = 0;
     
     // IManagerを作成します
     if( Laser::System::ManagerFactory::Create( TGUL::String( "OpenGL"), &pManager ) == false ) {
