@@ -127,11 +127,12 @@ int main(int argc, const char * argv[])
 		return 1;
 	}
 
+	// Bufferに頂点を書き込む
 	struct TriangleP32 {
-		bool operator()( void *pAddress, size_t VertexSize, size_t ArrayIndex ) {
+		size_t operator()( void *pAddress, size_t VertexSize, size_t ArrayIndex ) {
 			float *pVertex = reinterpret_cast< float * >( pAddress );
 			*pVertex = 1.0F;
-			return true;
+			return VertexSize;
 		}
 	};
 	pSysmemBuffer->Write( TriangleP32() );
