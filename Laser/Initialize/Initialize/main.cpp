@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include <Laser/Common/System/ManagerFactory.h>
-#include <Laser/Common/System/Manager.h>
+#include <Laser/Common/System/GraphicsManager.h>
 #include <Laser/Common/System/Window.h>
 #include <Laser/Common/System/CommandFactory.h>
 #include <Laser/Common/Input/IKeyboard.h>
@@ -10,6 +10,10 @@
 #include <Laser/Common/User/Pass.h>
 #include <TGUL/String.h>
 #include <Laser/Common/Command/Clear.h>
+#include <Laser/Common/Material/VertexDeclare.h>
+#include <Laser/Common/Resource/Buffer.h>
+#include <Laser/Common/Resource/SysmemBuffer.h>
+#include <Laser/Common/Resource/ResourceManager.h>
 #include <GL/glfw.h>
 
 class FirstPass : public Laser::User::Pass
@@ -26,7 +30,7 @@ public:
 	bool Create( )
 	{
 		Laser::Command::IBase *pClear = 0;
-		if( Laser::System::CommandFactory::CreateCommand( "Clear", &pClear ) == false ) {
+		if( Laser::CommandFactory::CreateCommand( "Clear", &pClear ) == false ) {
 			return false;
 		}
 		mClear = pClear->Get<Laser::Command::Clear>( );
@@ -59,10 +63,10 @@ int main(int argc, const char * argv[])
 {
     std::cout << "初期化を行います" << std::endl;
 
-    Laser::System::Manager *pManager = 0;
+    Laser::GraphicsManager *pManager = 0;
     
     // IManagerを作成します
-    if( Laser::System::ManagerFactory::Create( TGUL::String( "OpenGL"), &pManager ) == false ) {
+    if( Laser::GraphicsManagerFactory::Create( TGUL::String( "OpenGL"), &pManager ) == false ) {
         return 1;
     }
     
@@ -72,7 +76,7 @@ int main(int argc, const char * argv[])
     }
 	
 	// Windowを作成します
-	Laser::System::Window *pWindow;
+	Laser::Window *pWindow;
 	if( pManager->CreateWindow( &pWindow ) == false ) {
 		return 1;
 	}
@@ -94,7 +98,7 @@ int main(int argc, const char * argv[])
 	}
 
 	// TechniqueManagerを作成する
-	Laser::System::TechniqueManager *pTechniqueManager;
+	Laser::TechniqueManager *pTechniqueManager;
 	if( pManager->CreateTechniqueManager( &pTechniqueManager ) == false ) {
 		return 1;
 	}
@@ -108,6 +112,30 @@ int main(int argc, const char * argv[])
 	pTechniqueManager->Regist( clear );
 	pWindow->SetTechnique(pTechniqueManager);
 	
+	// 頂点定義を作成する
+	Laser::VertexDeclare VertexP32(Laser::IVertexDeclare::TYPE_P32);
+	
+	// Bufferを作成する
+	const Laser::ResourceManager &ResourceManager = pManager->GetResourceManager();
+
+	Laser::Resource::Buffer *pSysmemBuffer = 0;
+	if( ResourceManager.CreateBuffer( "Sysmem", 0 ) == false ) {
+		return 1;
+	}
+	
+	if( pSysmemBuffer->Allocate( VertexP32.GetSize(), 3 ) == false ) {
+		return 1;
+	}
+
+	struct TriangleP32 {
+		bool operator()( void *pAddress, size_t VertexSize, size_t ArrayIndex ) {
+			float *pVertex = reinterpret_cast< float * >( pAddress );
+			*pVertex = 1.0F;
+			return true;
+		}
+	};
+	pSysmemBuffer->Write( TriangleP32() );
+
 	// 描画ループ
 	while( pWindow->IsOpen() ) {
 
