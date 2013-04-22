@@ -65,23 +65,23 @@ int main(int argc, const char * argv[])
 
     Laser::GraphicsManager *pManager = 0;
     
-    // IManagerを作成します
+    // IManagerを作成
     if( Laser::GraphicsManagerFactory::Create( TGUL::String( "OpenGL"), &pManager ) == false ) {
         return 1;
     }
     
-	// Managerを作成する
+	// Managerを作成
     if( pManager->Create() == false ) {
         return 1;
     }
 	
-	// Windowを作成します
+	// Windowを作成
 	Laser::Window *pWindow;
 	if( pManager->CreateWindow( &pWindow ) == false ) {
 		return 1;
 	}
 	
-	// Windowを作成する
+	// Windowを作成
 	if( pWindow->Create( "Sample", 0, 0, 0, 0 ) == false ) {
 		return 1;
 	}
@@ -91,19 +91,19 @@ int main(int argc, const char * argv[])
 		return 1;
 	}
 
-	// Keyboardを作成する
+	// Keyboardを作成
 	Laser::Input::IKeyboard *pKeyboard;
 	if( pManager->CreateKeyboard( &pKeyboard ) == false ) {
 		return 1;
 	}
 
-	// TechniqueManagerを作成する
+	// TechniqueManagerを作成
 	Laser::TechniqueManager *pTechniqueManager;
 	if( pManager->CreateTechniqueManager( &pTechniqueManager ) == false ) {
 		return 1;
 	}
 
-	// Techniqueを作成する
+	// Techniqueを作成
 	SampleClearTechnique clear;
 	if( clear.Create() == false ) {
 		return 1;
@@ -112,14 +112,14 @@ int main(int argc, const char * argv[])
 	pTechniqueManager->Regist( clear );
 	pWindow->SetTechnique(pTechniqueManager);
 	
-	// 頂点定義を作成する
+	// 頂点定義を作成
 	Laser::VertexDeclare VertexP32(Laser::IVertexDeclare::TYPE_P32);
 	
-	// Bufferを作成する
+	// Bufferを作成
 	const Laser::ResourceManager &ResourceManager = pManager->GetResourceManager();
 
 	Laser::Resource::Buffer *pSysmemBuffer = 0;
-	if( ResourceManager.CreateBuffer( "Sysmem", 0 ) == false ) {
+	if( ResourceManager.CreateBuffer( "SysmemBuffer", &pSysmemBuffer ) == false ) {
 		return 1;
 	}
 	
@@ -136,6 +136,18 @@ int main(int argc, const char * argv[])
 		}
 	};
 	pSysmemBuffer->Write( TriangleP32() );
+
+	// 頂点シェーダーを作成
+	Laser::IShader *pVertexShader = 0;
+	if( ResourceManager.CreateShader("VertexShader", &pVertexShader ) == false ) {
+		return 1;
+	}
+	
+	// フラグメントシェーダーを作成
+	Laser::IShader *pFragmentShader = 0;
+	if( ResourceManager.CreateShader("FragmentShader", &pFragmentShader ) == false ) {
+		return 1;
+	}
 
 	// 描画ループ
 	while( pWindow->IsOpen() ) {
