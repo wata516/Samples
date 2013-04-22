@@ -1,19 +1,19 @@
-#include <iostream>
+﻿#include <iostream>
 
-#include <Laser/Common/System/ManagerFactory.h>
-#include <Laser/Common/System/GraphicsManager.h>
-#include <Laser/Common/System/Window.h>
-#include <Laser/Common/System/CommandFactory.h>
-#include <Laser/Common/Input/IKeyboard.h>
-#include <laser/Common/System/TechniqueManager.h>
-#include <Laser/Common/User/Technique.h>
-#include <Laser/Common/User/Pass.h>
+#include <Laser/ManagerFactory.h>
+#include <Laser/GraphicsManager.h>
+#include <Laser/Window.h>
+#include <Laser/IKeyboard.h>
+#include <laser/TechniqueManager.h>
+#include <Laser/Technique.h>
+#include <Laser/CommandFactory.h>
+#include <Laser//Pass.h>
 #include <TGUL/String.h>
-#include <Laser/Common/Command/Clear.h>
-#include <Laser/Common/Material/VertexDeclare.h>
-#include <Laser/Common/Resource/Buffer.h>
-#include <Laser/Common/Resource/SysmemBuffer.h>
-#include <Laser/Common/Resource/ResourceManager.h>
+#include <Laser/Clear.h>
+#include <Laser/VertexDeclare.h>
+#include <Laser/Buffer.h>
+#include <Laser/SysmemBuffer.h>
+#include <Laser/ResourceManager.h>
 #include <GL/glfw.h>
 
 class FirstPass : public Laser::User::Pass
