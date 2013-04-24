@@ -14,6 +14,7 @@
 #include <Laser/Buffer.h>
 #include <Laser/SysmemBuffer.h>
 #include <Laser/ResourceManager.h>
+#include <Laser/IShader.h>
 #include <GL/glfw.h>
 
 class FirstPass : public Laser::User::Pass
@@ -148,6 +149,8 @@ int main(int argc, const char * argv[])
 	if( ResourceManager.CreateShader("FragmentShader", &pFragmentShader ) == false ) {
 		return 1;
 	}
+
+	pVertexShader->Load( "Test", 10 );
 
 	// 描画ループ
 	while( pWindow->IsOpen() ) {
