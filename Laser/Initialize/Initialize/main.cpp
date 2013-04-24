@@ -117,14 +117,14 @@ int main(int argc, const char * argv[])
 	Laser::VertexDeclare VertexP32(Laser::IVertexDeclare::TYPE_P32);
 	
 	// Bufferを作成
-	const Laser::ResourceManager &ResourceManager = pManager->GetResourceManager();
+	Laser::ResourceManager &ResourceManager = pManager->GetResourceManager();
 
 	Laser::Resource::Buffer *pSysmemBuffer = 0;
 	if( ResourceManager.CreateBuffer( "SysmemBuffer", &pSysmemBuffer ) == false ) {
 		return 1;
 	}
 	
-	if( pSysmemBuffer->Allocate( VertexP32.GetSize(), 3 ) == false ) {
+	if( pSysmemBuffer->Allocate( sizeof( float ) * 4, 3 ) == false ) {
 		return 1;
 	}
 
@@ -133,27 +133,30 @@ int main(int argc, const char * argv[])
 		size_t operator()( void *pAddress, size_t VertexSize, size_t ArrayIndex ) {
 			float *pVertex = reinterpret_cast< float * >( pAddress );
 			*pVertex = 1.0F;
-			return VertexSize;
+			return sizeof( float ) * 4;
 		}
 	};
 	pSysmemBuffer->Write( TriangleP32() );
 
 	// 頂点シェーダーを作成
-	Laser::IShader *pVertexShader = 0;
+	Laser::Shader *pVertexShader = 0;
 	if( ResourceManager.CreateShader("VertexShader", &pVertexShader ) == false ) {
 		return 1;
 	}
 	
 	// フラグメントシェーダーを作成
-	Laser::IShader *pFragmentShader = 0;
+	Laser::Shader *pFragmentShader = 0;
 	if( ResourceManager.CreateShader("FragmentShader", &pFragmentShader ) == false ) {
 		return 1;
 	}
-
-	pVertexShader->Load( "Test", 10 );
+	
+	((Laser::IShader *)pVertexShader)->Load( "../Media/Simple.vs", 10 );
 
 	// 描画ループ
 	while( pWindow->IsOpen() ) {
+		
+		// リソースマネージャーを処理する
+		ResourceManager.Execute();
 
 		// キー入力操作
 		pKeyboard->Update( );
