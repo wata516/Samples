@@ -14,7 +14,7 @@
 #include <Laser/Buffer.h>
 #include <Laser/SysmemBuffer.h>
 #include <Laser/ResourceManager.h>
-#include <Laser/IShader.h>
+#include <Laser/Shader.h>
 #include <GL/glfw.h>
 
 class FirstPass : public Laser::User::Pass
@@ -150,7 +150,7 @@ int main(int argc, const char * argv[])
 		return 1;
 	}
 	
-	((Laser::IShader *)pVertexShader)->Load( "../Media/Simple.vs", 10 );
+	pVertexShader->Load( "../../../../Media/Simple.vs", 10 );
 
 	// 描画ループ
 	while( pWindow->IsOpen() ) {
