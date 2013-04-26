@@ -9,7 +9,8 @@
 #include <Laser/CommandFactory.h>
 #include <Laser//Pass.h>
 #include <TGUL/String.h>
-#include <Laser/Clear.h>
+#include <Laser/CommandClear.h>
+#include <Laser/CommandShader.h>
 #include <Laser/VertexDeclare.h>
 #include <Laser/Buffer.h>
 #include <Laser/SysmemBuffer.h>
@@ -25,16 +26,28 @@
 class FirstPass : public Laser::User::Pass
 {
 	Laser::Command::Clear *mClear;
+	Laser::Command::Shader *mSimpleShader;
+	Laser::ResourceManager *mResources;
+
+public:
+	FirstPass()
+		: mClear( 0 )
+		, mSimpleShader( 0 )
+		, mResources( 0 )
+	{}
 
 public:
 	virtual unsigned int GetClassSize() const { return sizeof( *this ); }
 	virtual void Render() const
 	{
 		mClear->Draw();
+		mSimpleShader->Draw();
 	}
 
-	bool Create( )
+	bool Create( Laser::GraphicsManager *pManager )
 	{
+		mResources = &pManager->GetResourceManager();
+
 		Laser::Command::IBase *pClear = 0;
 		if( Laser::CommandFactory::CreateCommand( "Clear", &pClear ) == false ) {
 			return false;
@@ -42,6 +55,18 @@ public:
 		mClear = pClear->Get<Laser::Command::Clear>( );
 		mClear->SetColor( 1.0F, 0.0F, 0.0F, 1.0F );
 
+		Laser::Shader *pVertex = 0, *pFragment = 0;
+		mResources->GetShader( "SimpleVertex", &pVertex );
+		mResources->GetShader( "SimpleFragment", &pFragment );
+
+		Laser::Command::IBase *pShader = 0;
+		if( Laser::CommandFactory::CreateCommand( "Shader", &pShader ) == false ) {
+			return false;
+		};
+		mSimpleShader = pShader->Get<Laser::Command::Shader>( );
+		mSimpleShader->SetShader( Laser::Command::Shader::SHADER_TYPE_VERTEX, pVertex );
+		mSimpleShader->SetShader( Laser::Command::Shader::SHADER_TYPE_FRAGMENT, pFragment );
+		
 		return true;
 	}
 };
@@ -54,8 +79,11 @@ public:
 	virtual unsigned int GetClassSize() const { return sizeof( *this ); }
 
 public:
-	bool Create( ) {
-		mFirstPass.Create();
+	SampleClearTechnique() {}
+
+public:
+	bool Create( Laser::GraphicsManager *pManager ) {
+		mFirstPass.Create( pManager );
 
 		if( Regist( mFirstPass ) == false ) {
 			return false;
@@ -102,21 +130,6 @@ int main(int argc, const char * argv[])
 	if( pManager->CreateKeyboard( &pKeyboard ) == false ) {
 		return 1;
 	}
-
-	// TechniqueManagerを作成
-	Laser::TechniqueManager *pTechniqueManager;
-	if( pManager->CreateTechniqueManager( &pTechniqueManager ) == false ) {
-		return 1;
-	}
-
-	// Techniqueを作成
-	SampleClearTechnique clear;
-	if( clear.Create() == false ) {
-		return 1;
-	}
-
-	pTechniqueManager->Regist( clear );
-	pWindow->SetTechnique(pTechniqueManager);
 	
 	// 頂点定義を作成
 	Laser::VertexDeclare VertexP32(Laser::IVertexDeclare::TYPE_P32);
@@ -145,7 +158,7 @@ int main(int argc, const char * argv[])
 
 	// 頂点シェーダーを作成
 	Laser::Shader *pVertexShader = 0;
-	if( ResourceManager.CreateShader("VertexShader", &pVertexShader ) == false ) {
+	if( ResourceManager.CreateShader("VertexShader", "SimpleVertex", &pVertexShader ) == false ) {
 		return 1;
 	}
 	
@@ -155,13 +168,28 @@ int main(int argc, const char * argv[])
 
 	// フラグメントシェーダーを作成
 	Laser::Shader *pFragmentShader = 0;
-	if( ResourceManager.CreateShader("FragmentShader", &pFragmentShader ) == false ) {
+	if( ResourceManager.CreateShader("FragmentShader", "SimpleFragment", &pFragmentShader ) == false ) {
 		return 1;
 	}
 	
 	if( pFragmentShader->Load( MEDIA_PATH"Simple.fs", 10 ) == false ) {
 		return 1;
 	}
+
+	// TechniqueManagerを作成
+	Laser::TechniqueManager *pTechniqueManager;
+	if( pManager->CreateTechniqueManager( &pTechniqueManager ) == false ) {
+		return 1;
+	}
+
+	// Techniqueを作成
+	SampleClearTechnique clear;
+	if( clear.Create( pManager ) == false ) {
+		return 1;
+	}
+
+	pTechniqueManager->Regist( clear );
+	pWindow->SetTechnique(pTechniqueManager);
 
 	// 描画ループ
 	while( pWindow->IsOpen() ) {
@@ -171,6 +199,7 @@ int main(int argc, const char * argv[])
 
 		// キー入力操作
 		pKeyboard->Update( );
+
 		// 描画を行う
 		pWindow->Render();
 
