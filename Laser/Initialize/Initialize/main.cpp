@@ -17,6 +17,11 @@
 #include <Laser/Shader.h>
 #include <GL/glfw.h>
 
+#if LASER_IS_PLATFORM(APPLE)
+#define MEDIA_PATH "../../../../../../Media/"
+#elif LASER_IS_PLATFORM(WINDOWS)
+#define MEDIA_PATH "../../../../Media/"
+#endif
 class FirstPass : public Laser::User::Pass
 {
 	Laser::Command::Clear *mClear;
@@ -144,13 +149,19 @@ int main(int argc, const char * argv[])
 		return 1;
 	}
 	
+	if( pVertexShader->Load( MEDIA_PATH"Simple.vs", 10 ) == false ) {
+		return 1;
+	}
+
 	// フラグメントシェーダーを作成
 	Laser::Shader *pFragmentShader = 0;
 	if( ResourceManager.CreateShader("FragmentShader", &pFragmentShader ) == false ) {
 		return 1;
 	}
 	
-	pVertexShader->Load( "../../../../Media/Simple.vs", 10 );
+	if( pFragmentShader->Load( MEDIA_PATH"Simple.fs", 10 ) == false ) {
+		return 1;
+	}
 
 	// 描画ループ
 	while( pWindow->IsOpen() ) {
