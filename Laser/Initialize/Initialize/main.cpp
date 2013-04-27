@@ -1,4 +1,4 @@
-﻿#include <iostream>
+#include <iostream>
 
 #include <Laser/ManagerFactory.h>
 #include <Laser/GraphicsManager.h>
@@ -11,6 +11,7 @@
 #include <TGUL/String.h>
 #include <Laser/CommandClear.h>
 #include <Laser/CommandShader.h>
+#include <Laser/CommandVertexBuffer.h>
 #include <Laser/VertexDeclare.h>
 #include <Laser/Buffer.h>
 #include <Laser/VertexBuffer.h>
@@ -28,14 +29,14 @@ class FirstPass : public Laser::User::Pass
 {
 	Laser::Command::Clear *mClear;
 	Laser::Command::Shader *mSimpleShader;
-	Laser::VertexBuffer *mVertexBuffer;
+	Laser::Command::VertexBuffer *mTriangleVertex;
 	Laser::ResourceManager *mResources;
 
 public:
 	FirstPass()
 		: mClear( 0 )
 		, mSimpleShader( 0 )
-		, mVertexBuffer( 0 )
+		, mTriangleVertex( 0 )
 		, mResources( 0 )
 	{}
 
@@ -50,8 +51,10 @@ public:
 			mSimpleShader->Create();
 		}
 
+		// 頂点を描画
 		if( mSimpleShader->IsAvailable() ) {
 			mSimpleShader->Draw();
+			mTriangleVertex->Draw();
 		}
 	}
 
@@ -64,7 +67,7 @@ public:
 			return false;
 		}
 		mClear = pClear->Get<Laser::Command::Clear>( );
-		mClear->SetColor( 1.0F, 0.0F, 0.0F, 1.0F );
+		mClear->SetColor( 0.8F, 0.8F, 0.8F, 1.0F );
 
 		// シェーダーを作成する
 		Laser::Shader *pVertex = 0, *pFragment = 0;
@@ -80,17 +83,18 @@ public:
 		mSimpleShader->SetShader( Laser::Command::Shader::SHADER_TYPE_FRAGMENT, pFragment );
 		
 		// 頂点定義を作成
-		Laser::VertexDeclare VertexP32C32( Laser::IVertexDeclare::TYPE_P32 | Laser::IVertexDeclare::TYPE_C32 );
+		Laser::VertexDeclare VertexP32C32;
 		VertexP32C32.CreateVertexElement(Laser::IVertexDeclare::TYPE_P32, "inPosition", 0 );
 		VertexP32C32.CreateVertexElement(Laser::IVertexDeclare::TYPE_C32, "inColor", 1 );
 		mSimpleShader->BindVertexDeclare( VertexP32C32 );
 
 		// 頂点バッファを作成
-		if( mResources->CreateBuffer( "VertexBuffer", "Triangle", (Laser::Resource::Buffer**)&mVertexBuffer ) == false ) {
-			return false;
+		Laser::VertexBuffer *pVertexBuffer;
+		if( mResources->CreateBuffer( "VertexBuffer", "Triangle", (Laser::Resource::Buffer**)&pVertexBuffer ) == false ) {
+			return 1;
 		}
 
-		if( mVertexBuffer->Create( VertexP32C32, 3 ) == false ) {
+		if( pVertexBuffer->Create( VertexP32C32, 3 ) == false ) {
 			return 1;
 		}
 		
@@ -99,8 +103,8 @@ public:
 			size_t operator()( void *pAddress, size_t VertexSize ) {
 				boost::array< const float, 12 > positions = {
 					-0.8f,-0.8f,0.0f,1.0f,
-					0.8f,-0.8f,0.0f,1.0f,
-					0.0f, 0.8f,0.0f,1.0f
+					0.0f,-0.8f,0.0f,1.0f,
+					0.8f, 0.8f,0.0f,1.0f
 				};
 				boost::array< const float, 12 > colors = {
 					1.0f, 0.0f, 0.0f, 1.0f,
@@ -121,8 +125,15 @@ public:
 				return result * sizeof( float );
 			}
 		};
-		mVertexBuffer->Write( TriangleP32C32() );
+		pVertexBuffer->Write( TriangleP32C32() );
 		
+		Laser::Command::IBase *pTriangle = 0;
+		if( Laser::CommandFactory::CreateCommand( "VertexBuffer", &pTriangle ) == false ) {
+			return false;
+		};
+		mTriangleVertex = pTriangle->Get<Laser::Command::VertexBuffer>();
+		mTriangleVertex->Create( pVertexBuffer );
+
 
 		return true;
 	}
