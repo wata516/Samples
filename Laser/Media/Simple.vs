@@ -5,11 +5,11 @@ uniform mat4 MVPMatrix;
 in vec4 inPosition;
 in vec3 inColor;
 
-out vec3 outColor;
+out vec3 VertexColor;
 void main( void )
 {
 
-	gl_Position = MVPMatrix * inPosition;
-	outColor = inColor;
+	gl_Position = vec4( inPosition, 1.0F );
+	VertexColor = inColor;
 
 }
