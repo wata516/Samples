@@ -12,11 +12,13 @@
 #include <Laser/CommandClear.h>
 #include <Laser/CommandShader.h>
 #include <Laser/CommandVertexBuffer.h>
+#include <Laser/CommandMaterial.h>
 #include <Laser/VertexDeclare.h>
 #include <Laser/Buffer.h>
 #include <Laser/VertexBuffer.h>
 #include <Laser/ResourceManager.h>
 #include <Laser/Shader.h>
+#include <Laser/ShaderUniformBuffer.h>
 #include <GL/glfw.h>
 #include <boost/foreach.hpp>
 
@@ -30,13 +32,21 @@ class FirstPass : public Laser::User::Pass
 	Laser::Command::Clear *mClear;
 	Laser::Command::Shader *mSimpleShader;
 	Laser::Command::VertexBuffer *mTriangleVertex;
+	Laser::Command::Material *mMaterial;
 	Laser::ResourceManager *mResources;
+
+	struct TransformUniformBlock
+	{
+		float MVPMaterix;
+	};
+	Laser::ShaderUniformBufferClass< 0, TransformUniformBlock > mTransformBlock;
 
 public:
 	FirstPass()
 		: mClear( 0 )
 		, mSimpleShader( 0 )
 		, mTriangleVertex( 0 )
+		, mMaterial( 0 )
 		, mResources( 0 )
 	{}
 
@@ -44,9 +54,13 @@ public:
 	virtual unsigned int GetClassSize() const { return sizeof( *this ); }
 	virtual void Render() const
 	{
+		// UniformBuffer更新
+		mMaterial->UpdateShaderUniformBuffer( mTransformBlock );
+
+		// クリア
 		mClear->Draw();
 		
-		// シェーダーを作成する
+		// シェーダーを作成
 		if( mSimpleShader->IsAvailable() == false ) {
 			mSimpleShader->Create();
 		}
@@ -54,6 +68,7 @@ public:
 		// 頂点を描画
 		if( mSimpleShader->IsAvailable() ) {
 			mSimpleShader->Draw();
+			mMaterial->Draw();
 			mTriangleVertex->Draw();
 		}
 	}
@@ -102,9 +117,9 @@ public:
 		struct TriangleP32C32 {
 			size_t operator()( void *pAddress, size_t VertexSize ) {
 				boost::array< const float, 12 > positions = {
-					-0.8f,-0.8f,0.0f,1.0f,
-					0.0f,-0.8f,0.0f,1.0f,
-					0.8f, 0.8f,0.0f,1.0f
+					-0.8f, -0.8f,0.0f,1.0f,
+					0.8f,-0.8f,0.0f,1.0f,
+					0.0f, 0.8f,0.0f,1.0f
 				};
 				boost::array< const float, 12 > colors = {
 					1.0f, 0.0f, 0.0f, 1.0f,
@@ -133,7 +148,24 @@ public:
 		};
 		mTriangleVertex = pTriangle->Get<Laser::Command::VertexBuffer>();
 		mTriangleVertex->Create( pVertexBuffer );
+		
+		// Materialを作成
+		Laser::Command::IBase *pMaterial = 0;
+		if( Laser::CommandFactory::CreateCommand( "Material", &pMaterial ) == false ) {
+			return false;
+		};
+		mMaterial = pMaterial->Get<Laser::Command::Material>( );
 
+		// Uniform Buffer
+		Laser::Resource::Buffer *pTransformBuffer = 0;
+		if( mResources->GetBuffer( "Transform", &pTransformBuffer ) == false ) {
+			return false;
+		}
+		void *pTransformBufferTmp;
+		if( pTransformBuffer->QueryInterface(Laser::UUIDS::SHADER_UNIFORM_BUFFER, &pTransformBufferTmp ) == false ) {
+			return false;
+		}
+		mMaterial->Create( static_cast< Laser::ShaderUniformBuffer *>( pTransformBuffer ) );
 
 		return true;
 	}
@@ -218,6 +250,15 @@ int main(int argc, const char * argv[])
 	}
 	
 	if( pFragmentShader->Load( MEDIA_PATH"Simple.fs", 10 ) == false ) {
+		return 1;
+	}
+	
+	// UniformBufferを作成
+	Laser::ShaderUniformBuffer *pVertexUniformBuffer = 0;
+	if( ResourceManager.CreateBuffer( "UniformBuffer", "Transform", (Laser::Resource::Buffer**)&pVertexUniformBuffer ) == false ) {
+		return 1;
+	}
+	if( pVertexUniformBuffer->Create() == false ) {
 		return 1;
 	}
 	

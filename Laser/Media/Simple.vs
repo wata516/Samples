@@ -1,11 +1,16 @@
 
 #version 150
 
-uniform mat4 MVPMatrix;
 in vec4 inPosition;
 in vec3 inColor;
 
 out vec3 VertexColor;
+
+layout( row_major, shared ) uniform Transform
+{
+	mat4x4 gMVPMatrix;
+};
+
 void main( void )
 {
 
