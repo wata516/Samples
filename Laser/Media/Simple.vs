@@ -6,15 +6,17 @@ in vec3 inColor;
 
 out vec3 VertexColor;
 
-layout( row_major, shared ) uniform Transform
+uniform Transform
 {
-	mat4x4 gMVPMatrix;
+	float gMVPMatrix;
 };
 
 void main( void )
 {
 
 	gl_Position = inPosition;
-	VertexColor = inColor;
+//	VertexColor = inColor;
+	VertexColor = vec3(0.0F);
+	VertexColor.x = gMVPMatrix;
 
 }

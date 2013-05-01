@@ -19,6 +19,7 @@
 #include <Laser/ResourceManager.h>
 #include <Laser/Shader.h>
 #include <Laser/ShaderUniformBuffer.h>
+#include <Laser/DrawStatus.h>
 #include <GL/glfw.h>
 #include <boost/foreach.hpp>
 
@@ -37,9 +38,9 @@ class FirstPass : public Laser::User::Pass
 
 	struct TransformUniformBlock
 	{
-		float MVPMaterix;
+		float MVPMatrix;
 	};
-	Laser::ShaderUniformBufferClass< 0, TransformUniformBlock > mTransformBlock;
+	Laser::ShaderUniformBufferClass< TransformUniformBlock > mTransformBlock;
 
 public:
 	FirstPass()
@@ -54,11 +55,10 @@ public:
 	virtual unsigned int GetClassSize() const { return sizeof( *this ); }
 	virtual void Render() const
 	{
-		// UniformBuffer更新
-		mMaterial->UpdateShaderUniformBuffer( mTransformBlock );
+		Laser::DrawStatus status;
 
 		// クリア
-		mClear->Draw();
+		mClear->Draw( status );
 		
 		// シェーダーを作成
 		if( mSimpleShader->IsAvailable() == false ) {
@@ -67,9 +67,9 @@ public:
 
 		// 頂点を描画
 		if( mSimpleShader->IsAvailable() ) {
-			mSimpleShader->Draw();
-			mMaterial->Draw();
-			mTriangleVertex->Draw();
+			mSimpleShader->Draw(status);
+			mMaterial->Draw(status);
+			mTriangleVertex->Draw(status);
 		}
 	}
 
@@ -157,15 +157,19 @@ public:
 		mMaterial = pMaterial->Get<Laser::Command::Material>( );
 
 		// Uniform Buffer
-		Laser::Resource::Buffer *pTransformBuffer = 0;
-		if( mResources->GetBuffer( "Transform", &pTransformBuffer ) == false ) {
+		Laser::Resource::Buffer *pUniformBuffer = 0;
+		if( mResources->GetBuffer( "Transform", &pUniformBuffer ) == false ) {
 			return false;
 		}
 		void *pTransformBufferTmp;
-		if( pTransformBuffer->QueryInterface(Laser::UUIDS::SHADER_UNIFORM_BUFFER, &pTransformBufferTmp ) == false ) {
+		if( pUniformBuffer->QueryInterface(Laser::UUIDS::SHADER_UNIFORM_BUFFER, &pTransformBufferTmp ) == false ) {
 			return false;
 		}
-		mMaterial->Create( static_cast< Laser::ShaderUniformBuffer *>( pTransformBuffer ) );
+		Laser::ShaderUniformBuffer *pTransformBuffer = static_cast< Laser::ShaderUniformBuffer *>( pTransformBufferTmp );
+		mMaterial->Create( pTransformBuffer );
+
+		mTransformBlock.GetBuffer().MVPMatrix = 1.0F;
+		mMaterial->UpdateShaderUniformBuffer(mTransformBlock, 0, "Transform" );
 
 		return true;
 	}
