@@ -10,7 +10,6 @@
 #include <Laser//Pass.h>
 #include <TGUL/String.h>
 #include <Laser/CommandClear.h>
-#include <Laser/CommandShader.h>
 #include <Laser/CommandVertexBuffer.h>
 #include <Laser/CommandMaterial.h>
 #include <Laser/VertexDeclare.h>
@@ -31,7 +30,6 @@
 class FirstPass : public Laser::User::Pass
 {
 	Laser::Command::Clear *mClear;
-	Laser::Command::Shader *mSimpleShader;
 	Laser::Command::VertexBuffer *mTriangleVertex;
 	Laser::Command::Material *mMaterial;
 	Laser::ResourceManager *mResources;
@@ -45,7 +43,6 @@ class FirstPass : public Laser::User::Pass
 public:
 	FirstPass()
 		: mClear( 0 )
-		, mSimpleShader( 0 )
 		, mTriangleVertex( 0 )
 		, mMaterial( 0 )
 		, mResources( 0 )
@@ -60,17 +57,9 @@ public:
 		// クリア
 		mClear->Draw( status );
 		
-		// シェーダーを作成
-		if( mSimpleShader->IsAvailable() == false ) {
-			mSimpleShader->Create();
-		}
-
 		// 頂点を描画
-		if( mSimpleShader->IsAvailable() ) {
-			mSimpleShader->Draw(status);
-			mMaterial->Draw(status);
-			mTriangleVertex->Draw(status);
-		}
+		mMaterial->Draw(status);
+		mTriangleVertex->Draw(status);
 	}
 
 	bool Create( Laser::GraphicsManager *pManager )
@@ -85,23 +74,14 @@ public:
 		mClear->SetColor( 0.8F, 0.8F, 0.8F, 1.0F );
 
 		// シェーダーを作成する
-		Laser::Shader *pVertex = 0, *pFragment = 0;
-		mResources->GetShader( "SimpleVertex", &pVertex );
-		mResources->GetShader( "SimpleFragment", &pFragment );
-
-		Laser::Command::IBase *pShader = 0;
-		if( Laser::CommandFactory::CreateCommand( "Shader", &pShader ) == false ) {
-			return false;
-		};
-		mSimpleShader = pShader->Get<Laser::Command::Shader>( );
-		mSimpleShader->SetShader( Laser::Command::Shader::SHADER_TYPE_VERTEX, pVertex );
-		mSimpleShader->SetShader( Laser::Command::Shader::SHADER_TYPE_FRAGMENT, pFragment );
+		Laser::Shader *pVertexShader = 0, *pFragmentShader = 0;
+		mResources->GetShader( "SimpleVertex", &pVertexShader );
+		mResources->GetShader( "SimpleFragment", &pFragmentShader );
 		
 		// 頂点定義を作成
 		Laser::VertexDeclare VertexP32C32;
 		VertexP32C32.CreateVertexElement(Laser::IVertexDeclare::TYPE_P32, "inPosition", 0 );
 		VertexP32C32.CreateVertexElement(Laser::IVertexDeclare::TYPE_C32, "inColor", 1 );
-		mSimpleShader->BindVertexDeclare( VertexP32C32 );
 
 		// 頂点バッファを作成
 		Laser::VertexBuffer *pVertexBuffer;
@@ -166,7 +146,7 @@ public:
 			return false;
 		}
 		Laser::ShaderUniformBuffer *pTransformBuffer = static_cast< Laser::ShaderUniformBuffer *>( pTransformBufferTmp );
-		mMaterial->Create( pTransformBuffer );
+		mMaterial->Create( pVertexShader, pFragmentShader, pTransformBuffer );
 
 		mTransformBlock.GetBuffer().MVPMatrix = 1.0F;
 		mMaterial->UpdateShaderUniformBuffer(mTransformBlock, 0, "Transform" );

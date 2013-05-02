@@ -15,8 +15,8 @@ void main( void )
 {
 
 	gl_Position = inPosition;
-//	VertexColor = inColor;
-	VertexColor = vec3(0.0F);
-	VertexColor.x = gMVPMatrix;
+	VertexColor = inColor;
+//	VertexColor = vec3(0.0F);
+//	VertexColor.x = gMVPMatrix;
 
 }
