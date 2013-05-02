@@ -91,39 +91,30 @@ public:
 			return 1;
 		}
 
-		if( pVertexBuffer->Create( VertexP32C32T16, 6 ) == false ) {
+		if( pVertexBuffer->Create( VertexP32C32T16, 4 ) == false ) {
 			return 1;
 		}
 		
 		// Bufferに頂点を書き込み
 		struct TriangleP32C32T16 {
 			size_t operator()( void *pAddress, size_t VertexSize ) {
-				boost::array< const float, 24 > positions = {
+				boost::array< const float, 16 > positions = {
 					-0.8, -0.8f, 0.0f, 1.0f,
 					-0.8f, 0.8f, 0.0f, 1.0f,
-					 0.8f, 0.8f, 0.0f, 1.0f,
-
-					-0.8, -0.8f, 0.0f, 1.0f,
-					 0.8f, 0.8f, 0.0f, 1.0f,
-					 0.8f,-0.8f, 0.0f, 1.0f
+					 0.8f,-0.8f, 0.0f, 1.0f,
+					 0.8f, 0.8f, 0.0f, 1.0f
 				};
-				boost::array< const float, 24 > colors = {
+				boost::array< const float, 16 > colors = {
 					1.0f, 0.0f, 0.0f, 1.0f,
-					0.0f, 1.0f, 0.0f, 1.0f,
+					1.0f, 0.0f, 0.0f, 1.0f,
 					0.0f, 0.0f, 1.0f, 1.0f,
-
-					1.0f, 0.0f, 0.0f, 1.0f,
-					0.0f, 1.0f, 0.0f, 1.0f,
 					0.0f, 0.0f, 1.0f, 1.0f,
 				};
-				boost::array< const float, 12 > texcoords = {
-					0.0f, 1.0f,
+				boost::array< const float, 8 > texcoords = {
+					0.0f, 3.0f,
 					0.0f, 0.0f,
-					1.0f, 0.0f,
-
-					0.0f, 1.0f,
-					1.0f, 0.0f,
-					1.0f, 1.0f,
+					3.0f, 3.0f,
+					3.0f, 0.0f,
 				};
 
 				size_t result = 0;
@@ -150,7 +141,7 @@ public:
 			return false;
 		};
 		mTriangleVertex = pTriangle->Get<Laser::Command::VertexBuffer>();
-		mTriangleVertex->Create( pVertexBuffer );
+		mTriangleVertex->Create( pVertexBuffer, Laser::Command::VertexBuffer::TOPOLOGY_TRIANGLE_STRIP );
 		
 		// Materialを作成
 		Laser::Command::IBase *pMaterial = 0;
@@ -181,6 +172,7 @@ public:
 		mMaterial->UpdateShaderUniformBuffer(mTransformBlock, 0, "Transform" );
 		
 		mMaterial->SetTexture( 0, "DecalMap", pTexture );
+		pTexture->SetWrap( Laser::Texture::WRAP_CLAMP_TO_EDGE, Laser::Texture::WRAP_REPREAT, Laser::Texture::WRAP_REPREAT );
 
 		return true;
 	}
