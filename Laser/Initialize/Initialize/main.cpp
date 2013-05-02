@@ -15,6 +15,7 @@
 #include <Laser/VertexDeclare.h>
 #include <Laser/Buffer.h>
 #include <Laser/VertexBuffer.h>
+#include <Laser/Texture.h>
 #include <Laser/ResourceManager.h>
 #include <Laser/Shader.h>
 #include <Laser/ShaderUniformBuffer.h>
@@ -79,9 +80,10 @@ public:
 		mResources->GetShader( "SimpleFragment", &pFragmentShader );
 		
 		// 頂点定義を作成
-		Laser::VertexDeclare VertexP32C32;
-		VertexP32C32.CreateVertexElement(Laser::IVertexDeclare::TYPE_P32, "inPosition", 0 );
-		VertexP32C32.CreateVertexElement(Laser::IVertexDeclare::TYPE_C32, "inColor", 1 );
+		Laser::VertexDeclare VertexP32C32T16;
+		VertexP32C32T16.CreateVertexElement(Laser::IVertexDeclare::TYPE_P32, "inPosition", 0 );
+		VertexP32C32T16.CreateVertexElement(Laser::IVertexDeclare::TYPE_C32, "inColor", 1 );
+		VertexP32C32T16.CreateVertexElement(Laser::IVertexDeclare::TYPE_T16, "inTexCoord", 2 );
 
 		// 頂点バッファを作成
 		Laser::VertexBuffer *pVertexBuffer;
@@ -89,22 +91,39 @@ public:
 			return 1;
 		}
 
-		if( pVertexBuffer->Create( VertexP32C32, 3 ) == false ) {
+		if( pVertexBuffer->Create( VertexP32C32T16, 6 ) == false ) {
 			return 1;
 		}
 		
 		// Bufferに頂点を書き込み
-		struct TriangleP32C32 {
+		struct TriangleP32C32T16 {
 			size_t operator()( void *pAddress, size_t VertexSize ) {
-				boost::array< const float, 12 > positions = {
-					-0.8f, -0.8f,0.0f,1.0f,
-					0.8f,-0.8f,0.0f,1.0f,
-					0.0f, 0.8f,0.0f,1.0f
+				boost::array< const float, 24 > positions = {
+					-0.8, -0.8f, 0.0f, 1.0f,
+					-0.8f, 0.8f, 0.0f, 1.0f,
+					 0.8f, 0.8f, 0.0f, 1.0f,
+
+					-0.8, -0.8f, 0.0f, 1.0f,
+					 0.8f, 0.8f, 0.0f, 1.0f,
+					 0.8f,-0.8f, 0.0f, 1.0f
 				};
-				boost::array< const float, 12 > colors = {
+				boost::array< const float, 24 > colors = {
 					1.0f, 0.0f, 0.0f, 1.0f,
 					0.0f, 1.0f, 0.0f, 1.0f,
 					0.0f, 0.0f, 1.0f, 1.0f,
+
+					1.0f, 0.0f, 0.0f, 1.0f,
+					0.0f, 1.0f, 0.0f, 1.0f,
+					0.0f, 0.0f, 1.0f, 1.0f,
+				};
+				boost::array< const float, 12 > texcoords = {
+					0.0f, 1.0f,
+					0.0f, 0.0f,
+					1.0f, 0.0f,
+
+					0.0f, 1.0f,
+					1.0f, 0.0f,
+					1.0f, 1.0f,
 				};
 
 				size_t result = 0;
@@ -116,11 +135,15 @@ public:
 				BOOST_FOREACH( const float value, colors ) {
 					*pCurrent = value; ++ pCurrent; ++ result;
 				}
+				BOOST_FOREACH( const float value, texcoords ) {
+					*pCurrent = value; ++ pCurrent; ++ result;
+				}
+
 
 				return result * sizeof( float );
 			}
 		};
-		pVertexBuffer->Write( TriangleP32C32() );
+		pVertexBuffer->Write( TriangleP32C32T16() );
 		
 		Laser::Command::IBase *pTriangle = 0;
 		if( Laser::CommandFactory::CreateCommand( "VertexBuffer", &pTriangle ) == false ) {
@@ -136,6 +159,12 @@ public:
 		};
 		mMaterial = pMaterial->Get<Laser::Command::Material>( );
 
+		// Texture
+		Laser::Texture *pTexture = 0;
+		if( mResources->GetTexture( "SimpleTexture", &pTexture ) == false ) {
+			return false;
+		}
+
 		// Uniform Buffer
 		Laser::Resource::Buffer *pUniformBuffer = 0;
 		if( mResources->GetBuffer( "Transform", &pUniformBuffer ) == false ) {
@@ -150,6 +179,8 @@ public:
 
 		mTransformBlock.GetBuffer().MVPMatrix = 1.0F;
 		mMaterial->UpdateShaderUniformBuffer(mTransformBlock, 0, "Transform" );
+		
+		mMaterial->SetTexture( 0, "DecalMap", pTexture );
 
 		return true;
 	}
@@ -167,7 +198,9 @@ public:
 
 public:
 	bool Create( Laser::GraphicsManager *pManager ) {
-		mFirstPass.Create( pManager );
+		if( mFirstPass.Create( pManager ) == false ) {
+			return false;
+		}
 
 		if( Regist( mFirstPass ) == false ) {
 			return false;
@@ -234,6 +267,16 @@ int main(int argc, const char * argv[])
 	}
 	
 	if( pFragmentShader->Load( MEDIA_PATH"Simple.fs", 10 ) == false ) {
+		return 1;
+	}
+	
+	// テクスチャを作成
+	Laser::Texture *pTexture = 0;
+	if( ResourceManager.CreateTexture("Texture", "SimpleTexture", &pTexture ) == false ) {
+		return 1;
+	}
+	
+	if( pTexture->Load(MEDIA_PATH"Sample.tga", 1024 ) == false ) {
 		return 1;
 	}
 	
