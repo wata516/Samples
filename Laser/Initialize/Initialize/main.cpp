@@ -13,6 +13,7 @@
 #include <Laser/CommandVertexBuffer.h>
 #include <Laser/CommandMaterial.h>
 #include <Laser/CommandRenderTarget.h>
+#include <Laser/CommandViewport.h>
 #include <Laser/VertexDeclare.h>
 #include <Laser/Buffer.h>
 #include <Laser/VertexBuffer.h>
@@ -33,6 +34,8 @@
 class FirstPass : public Laser::User::Pass
 {
 	Laser::Command::Clear *mClear;
+	Laser::Command::Viewport *mViewport;
+	Laser::Command::Viewport *mRenderTargetViewport;
 	Laser::Command::VertexBuffer *mTriangleVertexColor;
 	Laser::Command::VertexBuffer *mTriangleVertexTex;
 	Laser::Command::Material *mMaterial;
@@ -40,6 +43,7 @@ class FirstPass : public Laser::User::Pass
 	Laser::Command::RenderTarget *mRenderTarget;
 	Laser::Command::RenderTargetReset *mRenderTargetReset;
 	Laser::ResourceManager *mResources;
+	int mDefaultWindowWidth, mDefaultWindowHeight;
 
 	struct TransformUniformBlock
 	{
@@ -50,6 +54,8 @@ class FirstPass : public Laser::User::Pass
 public:
 	FirstPass()
 		: mClear( 0 )
+		, mViewport(0)
+		, mRenderTargetViewport(0)
 		, mTriangleVertexColor( 0 )
 		, mTriangleVertexTex( 0 )
 		, mMaterial( 0 )
@@ -60,6 +66,9 @@ public:
 	{}
 
 public:
+	void SetDefaultWidowWidth( int width ) { mDefaultWindowWidth = width; }
+	void SetDefaultWidowHeight( int height ) { mDefaultWindowHeight = height; }
+
 	virtual unsigned int GetClassSize() const { return sizeof( *this ); }
 	virtual void Render() const
 	{
@@ -71,6 +80,8 @@ public:
 		mClear->SetColor(0.0F, 1.0F, 0.0F, 1.0F);
 		mClear->Draw( status );
 		
+		mRenderTargetViewport->Draw( status );
+
 		// 頂点を描画
 		mMaterial->Draw(status);
 		mTriangleVertexColor->Draw(status);
@@ -81,6 +92,7 @@ public:
 		mClear->Draw( status );
 
 		// 頂点を描画
+		mViewport->Draw( status );
 		mMaterialTex->Draw(status);
 		mTriangleVertexTex->Draw(status);
 
@@ -237,6 +249,19 @@ public:
 
 		mMaterialTex->SetRenderTarget( "DecalMap", pRenderTarget );
 
+		Laser::Command::IBase *pViewport = 0;
+		if( Laser::CommandFactory::CreateCommand( "Viewport", &pViewport ) == false ) {
+			return false;
+		}
+		mViewport = pViewport->Get<Laser::Command::Viewport>( );
+		mViewport->SetViewport( 0.0F, 0, mDefaultWindowWidth, mDefaultWindowHeight );
+
+		if( Laser::CommandFactory::CreateCommand( "Viewport", &pViewport ) == false ) {
+			return false;
+		}
+		mRenderTargetViewport = pViewport->Get<Laser::Command::Viewport>( );
+		mRenderTargetViewport->SetViewport( 0.0F, 0.0F, 512.0F, 512.0F );
+
 		return true;
 	}
 };
@@ -250,6 +275,9 @@ public:
 
 public:
 	SampleClearTechnique() {}
+
+	void SetDefaultWidowWidth( int width ) { mFirstPass.SetDefaultWidowWidth( width ); }
+	void SetDefaultWidowHeight( int height ) { mFirstPass.SetDefaultWidowHeight(height ); }
 
 public:
 	bool Create( Laser::GraphicsManager *pManager ) {
@@ -368,10 +396,12 @@ int main(int argc, const char * argv[])
 
 	// Techniqueを作成
 	SampleClearTechnique clear;
+	clear.SetDefaultWidowWidth( pWindow->GetWidth() );
+	clear.SetDefaultWidowHeight( pWindow->GetHeight() );
 	if( clear.Create( pManager ) == false ) {
 		return 1;
 	}
-
+	
 	pTechniqueManager->Regist( clear );
 	pWindow->SetTechnique(pTechniqueManager);
 
