@@ -12,10 +12,12 @@
 #include <Laser/CommandClear.h>
 #include <Laser/CommandVertexBuffer.h>
 #include <Laser/CommandMaterial.h>
+#include <Laser/CommandRenderTarget.h>
 #include <Laser/VertexDeclare.h>
 #include <Laser/Buffer.h>
 #include <Laser/VertexBuffer.h>
 #include <Laser/Texture.h>
+#include <Laser/RenderTarget.h>
 #include <Laser/ResourceManager.h>
 #include <Laser/Shader.h>
 #include <Laser/ShaderUniformBuffer.h>
@@ -31,8 +33,12 @@
 class FirstPass : public Laser::User::Pass
 {
 	Laser::Command::Clear *mClear;
-	Laser::Command::VertexBuffer *mTriangleVertex;
+	Laser::Command::VertexBuffer *mTriangleVertexColor;
+	Laser::Command::VertexBuffer *mTriangleVertexTex;
 	Laser::Command::Material *mMaterial;
+	Laser::Command::Material *mMaterialTex;
+	Laser::Command::RenderTarget *mRenderTarget;
+	Laser::Command::RenderTargetReset *mRenderTargetReset;
 	Laser::ResourceManager *mResources;
 
 	struct TransformUniformBlock
@@ -44,8 +50,12 @@ class FirstPass : public Laser::User::Pass
 public:
 	FirstPass()
 		: mClear( 0 )
-		, mTriangleVertex( 0 )
+		, mTriangleVertexColor( 0 )
+		, mTriangleVertexTex( 0 )
 		, mMaterial( 0 )
+		, mMaterialTex( 0 )
+		, mRenderTarget( 0 )
+		, mRenderTargetReset( 0 )
 		, mResources( 0 )
 	{}
 
@@ -55,12 +65,25 @@ public:
 	{
 		Laser::DrawStatus status;
 
+		mRenderTarget->Draw( status );
+
 		// クリア
+		mClear->SetColor(0.0F, 1.0F, 0.0F, 1.0F);
 		mClear->Draw( status );
 		
 		// 頂点を描画
 		mMaterial->Draw(status);
-		mTriangleVertex->Draw(status);
+		mTriangleVertexColor->Draw(status);
+		
+		mRenderTargetReset->Draw( status );
+		
+		mClear->SetColor(0.0F, 0.0F, 1.0F, 1.0F);
+		mClear->Draw( status );
+
+		// 頂点を描画
+		mMaterialTex->Draw(status);
+		mTriangleVertexTex->Draw(status);
+
 	}
 
 	bool Create( Laser::GraphicsManager *pManager )
@@ -76,9 +99,12 @@ public:
 
 		// シェーダーを作成する
 		Laser::Shader *pVertexShader = 0, *pFragmentShader = 0;
-		mResources->GetShader( "SimpleVertex", &pVertexShader );
-		mResources->GetShader( "SimpleFragment", &pFragmentShader );
-		
+		Laser::Shader *pVertexShaderTex = 0, *pFragmentShaderTex = 0;
+		mResources->GetShader( "VertexColorVertex", &pVertexShader );
+		mResources->GetShader( "VertexColorFragment", &pFragmentShader );
+		mResources->GetShader( "SimpleVertex", &pVertexShaderTex );
+		mResources->GetShader( "SimpleFragment", &pFragmentShaderTex );
+
 		// 頂点定義を作成
 		Laser::VertexDeclare VertexP32C32T16;
 		VertexP32C32T16.CreateVertexElement(Laser::IVertexDeclare::TYPE_P32, "inPosition", 0 );
@@ -130,7 +156,6 @@ public:
 					*pCurrent = value; ++ pCurrent; ++ result;
 				}
 
-
 				return result * sizeof( float );
 			}
 		};
@@ -140,15 +165,26 @@ public:
 		if( Laser::CommandFactory::CreateCommand( "VertexBuffer", &pTriangle ) == false ) {
 			return false;
 		};
-		mTriangleVertex = pTriangle->Get<Laser::Command::VertexBuffer>();
-		mTriangleVertex->Create( pVertexBuffer, Laser::Command::VertexBuffer::TOPOLOGY_TRIANGLE_STRIP );
+		mTriangleVertexColor = pTriangle->Get<Laser::Command::VertexBuffer>();
+		mTriangleVertexColor->Create( pVertexBuffer, Laser::Command::VertexBuffer::TOPOLOGY_TRIANGLE_STRIP );
 		
+		if( Laser::CommandFactory::CreateCommand( "VertexBuffer", &pTriangle ) == false ) {
+			return false;
+		};
+		mTriangleVertexTex = pTriangle->Get<Laser::Command::VertexBuffer>();
+		mTriangleVertexTex->Create( pVertexBuffer, Laser::Command::VertexBuffer::TOPOLOGY_TRIANGLE_STRIP );
+
 		// Materialを作成
 		Laser::Command::IBase *pMaterial = 0;
 		if( Laser::CommandFactory::CreateCommand( "Material", &pMaterial ) == false ) {
 			return false;
 		};
 		mMaterial = pMaterial->Get<Laser::Command::Material>( );
+
+		if( Laser::CommandFactory::CreateCommand( "Material", &pMaterial ) == false ) {
+			return false;
+		};
+		mMaterialTex = pMaterial->Get<Laser::Command::Material>( );
 
 		// Texture
 		Laser::Texture *pTexture = 0;
@@ -167,12 +203,39 @@ public:
 		}
 		Laser::ShaderUniformBuffer *pTransformBuffer = static_cast< Laser::ShaderUniformBuffer *>( pTransformBufferTmp );
 		mMaterial->Create( pVertexShader, pFragmentShader, pTransformBuffer );
+		mMaterialTex->Create( pVertexShaderTex, pFragmentShaderTex, pTransformBuffer );
 
 		mTransformBlock.GetBuffer().MVPMatrix = 1.0F;
-		mMaterial->UpdateShaderUniformBuffer(mTransformBlock, 0, "Transform" );
+		mMaterialTex->UpdateShaderUniformBuffer(mTransformBlock, 0, "Transform" );
 		
-		mMaterial->SetTexture( 0, "DecalMap", pTexture );
+		mMaterialTex->SetTexture( 0, "DecalMap", pTexture );
 		pTexture->SetWrap( Laser::Texture::WRAP_CLAMP_TO_EDGE, Laser::Texture::WRAP_REPREAT, Laser::Texture::WRAP_REPREAT );
+
+		// RenderTargetを作成する
+		Laser::RenderTarget *pRenderTarget;
+		if( mResources->CreateRenderTarget( "RenderTarget", "SimpleRenderTarget", &pRenderTarget ) == false ) {
+			return false;
+		}
+		if( pRenderTarget->Create( 512,512 ) == false ) {
+			return false;
+		}
+		
+		Laser::Command::IBase *pRenderTargetBase = 0;
+		if( Laser::CommandFactory::CreateCommand( "RenderTarget", &pRenderTargetBase ) == false ) {
+			return false;
+		}
+		mRenderTarget = pRenderTargetBase->Get< Laser::Command::RenderTarget >( );
+		if( mRenderTarget->Create( pRenderTarget ) == false ) {
+			return false;
+		}
+
+		Laser::Command::IBase *pRenderTargetReset = 0;
+		if( Laser::CommandFactory::CreateCommand( "RenderTargetReset", &pRenderTargetReset) == false ) {
+			return false;
+		}
+		mRenderTargetReset = pRenderTargetReset->Get< Laser::Command::RenderTargetReset >( );
+
+		mMaterialTex->SetRenderTarget( "DecalMap", pRenderTarget );
 
 		return true;
 	}
@@ -252,6 +315,14 @@ int main(int argc, const char * argv[])
 		return 1;
 	}
 
+	if( ResourceManager.CreateShader("VertexShader", "VertexColorVertex", &pVertexShader ) == false ) {
+		return 1;
+	}
+	
+	if( pVertexShader->Load( MEDIA_PATH"VertexColor.vs", 10 ) == false ) {
+		return 1;
+	}
+
 	// フラグメントシェーダーを作成
 	Laser::Shader *pFragmentShader = 0;
 	if( ResourceManager.CreateShader("FragmentShader", "SimpleFragment", &pFragmentShader ) == false ) {
@@ -261,7 +332,15 @@ int main(int argc, const char * argv[])
 	if( pFragmentShader->Load( MEDIA_PATH"Simple.fs", 10 ) == false ) {
 		return 1;
 	}
+
+	if( ResourceManager.CreateShader("FragmentShader", "VertexColorFragment", &pFragmentShader ) == false ) {
+		return 1;
+	}
 	
+	if( pFragmentShader->Load( MEDIA_PATH"VertexColor.fs", 10 ) == false ) {
+		return 1;
+	}
+
 	// テクスチャを作成
 	Laser::Texture *pTexture = 0;
 	if( ResourceManager.CreateTexture("Texture", "SimpleTexture", &pTexture ) == false ) {
