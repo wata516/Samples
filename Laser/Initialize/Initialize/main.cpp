@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 
 #include <Laser/ManagerFactory.h>
 #include <Laser/GraphicsManager.h>
@@ -17,6 +17,7 @@
 #include <Laser/VertexDeclare.h>
 #include <Laser/Buffer.h>
 #include <Laser/VertexBuffer.h>
+#include <Laser/IndexBuffer.h>
 #include <Laser/Texture.h>
 #include <Laser/RenderTarget.h>
 #include <Laser/ResourceManager.h>
@@ -125,7 +126,7 @@ public:
 
 		// 頂点バッファを作成
 		Laser::VertexBuffer *pVertexBuffer;
-		if( mResources->CreateBuffer( "VertexBuffer", "Triangle", (Laser::Resource::Buffer**)&pVertexBuffer ) == false ) {
+		if( mResources->CreateVertexBuffer( "VertexBuffer", "Triangle", &pVertexBuffer ) == false ) {
 			return 1;
 		}
 
@@ -137,7 +138,7 @@ public:
 		struct TriangleP32C32T16 {
 			size_t operator()( void *pAddress, size_t VertexSize ) {
 				boost::array< const float, 16 > positions = {
-					-0.8, -0.8f, 0.0f, 1.0f,
+					-0.8f,-0.8f, 0.0f, 1.0f,
 					-0.8f, 0.8f, 0.0f, 1.0f,
 					 0.8f,-0.8f, 0.0f, 1.0f,
 					 0.8f, 0.8f, 0.0f, 1.0f
@@ -186,6 +187,12 @@ public:
 		mTriangleVertexTex = pTriangle->Get<Laser::Command::VertexBuffer>();
 		mTriangleVertexTex->Create( pVertexBuffer, Laser::Command::VertexBuffer::TOPOLOGY_TRIANGLE_STRIP );
 
+		// IndexBufferを作成
+		Laser::IndexBuffer *pIndexBuffer;
+		if( mResources->CreateIndexBuffer( "IndexBuffer", "Triangle", &pIndexBuffer ) == false ) {
+			return 1;
+		}
+
 		// Materialを作成
 		Laser::Command::IBase *pMaterial = 0;
 		if( Laser::CommandFactory::CreateCommand( "Material", &pMaterial ) == false ) {
@@ -205,8 +212,8 @@ public:
 		}
 
 		// Uniform Buffer
-		Laser::Resource::Buffer *pUniformBuffer = 0;
-		if( mResources->GetBuffer( "Transform", &pUniformBuffer ) == false ) {
+		Laser::ShaderUniformBuffer *pUniformBuffer = 0;
+		if( mResources->GetUniformBuffer( "Transform", &pUniformBuffer ) == false ) {
 			return false;
 		}
 		void *pTransformBufferTmp;
@@ -254,13 +261,13 @@ public:
 			return false;
 		}
 		mViewport = pViewport->Get<Laser::Command::Viewport>( );
-		mViewport->SetViewport( 0.0F, 0, mDefaultWindowWidth, mDefaultWindowHeight );
+		mViewport->SetViewport( 0, 0, mDefaultWindowWidth, mDefaultWindowHeight );
 
 		if( Laser::CommandFactory::CreateCommand( "Viewport", &pViewport ) == false ) {
 			return false;
 		}
 		mRenderTargetViewport = pViewport->Get<Laser::Command::Viewport>( );
-		mRenderTargetViewport->SetViewport( 0.0F, 0.0F, 512.0F, 512.0F );
+		mRenderTargetViewport->SetViewport( 0, 0, 512, 512 );
 
 		return true;
 	}
@@ -381,7 +388,7 @@ int main(int argc, const char * argv[])
 	
 	// UniformBufferを作成
 	Laser::ShaderUniformBuffer *pVertexUniformBuffer = 0;
-	if( ResourceManager.CreateBuffer( "UniformBuffer", "Transform", (Laser::Resource::Buffer**)&pVertexUniformBuffer ) == false ) {
+	if( ResourceManager.CreateUniformBuffer( "UniformBuffer", "Transform", &pVertexUniformBuffer ) == false ) {
 		return 1;
 	}
 	if( pVertexUniformBuffer->Create() == false ) {

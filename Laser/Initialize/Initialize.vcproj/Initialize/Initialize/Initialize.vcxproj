@@ -111,7 +111,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
-      <AdditionalDependencies>C:\dev\GraphicsLibrary\glfw-2.7.8.bin.WIN64\lib-msvc110\GLFW.lib;C:\dev\GraphicsLibrary\glew-1.9.0\lib\glew32.lib;C:\dev\GraphicsLibrary\glew-1.9.0\lib\glew32s.lib;OpenGL32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>C:\dev\GraphicsLibrary\glfw-2.7.8.bin.WIN64\lib-msvc110\GLFW.lib;C:\dev\GraphicsLibrary\glew-1.9.0\lib\glew32.lib;C:\dev\GraphicsLibrary\glew-1.9.0\lib\glew32s.lib;OpenGL32.lib;C:\dev\GraphicsLibrary\devil-1.7.8\lib\DevIL.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
