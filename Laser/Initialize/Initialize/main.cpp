@@ -14,6 +14,7 @@
 #include <Laser/CommandMaterial.h>
 #include <Laser/CommandRenderTarget.h>
 #include <Laser/CommandViewport.h>
+#include <Laser/CommandPrimitive.h>
 #include <Laser/VertexDeclare.h>
 #include <Laser/Buffer.h>
 #include <Laser/VertexBuffer.h>
@@ -39,6 +40,7 @@ class FirstPass : public Laser::User::Pass
 	Laser::Command::Viewport *mRenderTargetViewport;
 	Laser::Command::VertexBuffer *mTriangleVertexColor;
 	Laser::Command::VertexBuffer *mTriangleVertexTex;
+	Laser::Command::Primitive *mTriangle;
 	Laser::Command::Material *mMaterial;
 	Laser::Command::Material *mMaterialTex;
 	Laser::Command::RenderTarget *mRenderTarget;
@@ -59,6 +61,7 @@ public:
 		, mRenderTargetViewport(0)
 		, mTriangleVertexColor( 0 )
 		, mTriangleVertexTex( 0 )
+		, mTriangle( 0 )
 		, mMaterial( 0 )
 		, mMaterialTex( 0 )
 		, mRenderTarget( 0 )
@@ -86,6 +89,7 @@ public:
 		// 頂点を描画
 		mMaterial->Draw(status);
 		mTriangleVertexColor->Draw(status);
+		mTriangle->Draw(status);
 		
 		mRenderTargetReset->Draw( status );
 		
@@ -192,6 +196,13 @@ public:
 		if( mResources->CreateIndexBuffer( "IndexBuffer", "Triangle", &pIndexBuffer ) == false ) {
 			return 1;
 		}
+
+		// Primitiveを作成
+		if( Laser::CommandFactory::CreateCommand( "Primitive", &pTriangle ) == false ) {
+			return false;
+		};
+		mTriangle = pTriangle->Get<Laser::Command::Primitive>();
+		mTriangle->Create( pIndexBuffer, pVertexBuffer, Laser::Command::Primitive::TOPOLOGY_TRIANGLE_STRIP );
 
 		// Materialを作成
 		Laser::Command::IBase *pMaterial = 0;
