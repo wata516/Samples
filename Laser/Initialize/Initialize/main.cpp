@@ -99,7 +99,8 @@ public:
 		// 頂点を描画
 		mViewport->Draw( status );
 		mMaterialTex->Draw(status);
-		mTriangleVertexTex->Draw(status);
+		mTriangle->Draw(status);
+//		mTriangleVertexTex->Draw(status);
 
 	}
 
@@ -196,6 +197,24 @@ public:
 		if( mResources->CreateIndexBuffer( "IndexBuffer", "Triangle", &pIndexBuffer ) == false ) {
 			return 1;
 		}
+		pIndexBuffer->Create( Laser::IndexBuffer::INDEX_SIZE_U16, 4 );
+		struct TriangleIndexU16 {
+			size_t operator()( void *pAddress, size_t VertexSize ) {
+				boost::array< const uint16_t, 4 > indicies = {
+					0, 1, 2, 3
+				};
+				
+				size_t result = 0;
+				uint16_t *pCurrent = reinterpret_cast< uint16_t * >( pAddress );
+				
+				BOOST_FOREACH( const uint16_t value, indicies ) {
+					*pCurrent = value; ++ pCurrent; ++ result;
+				}
+				
+				return result * sizeof( uint16_t );
+			}
+		};
+		pIndexBuffer->Write( TriangleIndexU16() );
 
 		// Primitiveを作成
 		if( Laser::CommandFactory::CreateCommand( "Primitive", &pTriangle ) == false ) {
